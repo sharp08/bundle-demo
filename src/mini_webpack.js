@@ -1,11 +1,12 @@
 const fs = require("fs")
 const path = require("path")
 const parser = require("@babel/parser")   //  代码转换成 AST
-const traverse = require("@babel/traverse").default   //  
+const traverse = require("@babel/traverse").default   //  用来更新节点
 const babel = require("@babel/core")
 
 let ID = 0;
 
+// 
 function createAsset(filename) {
   const content = fs.readFileSync(filename, "utf-8")
 
@@ -15,13 +16,14 @@ function createAsset(filename) {
 
   let dependencies = []   //  搜集某个文件都依赖了哪些文件 ["./info.js"]
 
-  // visitor
+  // 找到 filename 文件的依赖，即 filename 文件 import 的内容
   traverse(ast, {
-    ImportDeclaration: ({ node }) => {
-      dependencies.push(node.source.value)
+    ImportDeclaration: v => {
+      dependencies.push(v.node.source.value)  //  这里 push 的值是 filename 中 import from 后面写的路径
     }
   })
 
+  // 转换成 es5 代码
   const { code: es5code } = babel.transformFromAstSync(ast, null, {
     presets: ["@babel/preset-env"]
   })
@@ -43,6 +45,8 @@ function createGraph(entry) {
 
   for (const asset of queue) {
 
+    // asset.filename:  ./src/index
+    // dirname:         ./src
     const dirname = path.dirname(asset.filename)
 
     asset.mapping = {}
