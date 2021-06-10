@@ -1,0 +1,1 @@
+export const company = "食为天"
